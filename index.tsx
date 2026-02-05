@@ -1,0 +1,1 @@
+// Logic centralized in index.html for high-performance dashboard rendering

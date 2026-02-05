@@ -1,0 +1,310 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOC CyberGuard v2.5 - AI Enhanced</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;700;900&display=swap');
+        :root { --bg: #020617; --emerald: #10b981; --red: #ef4444; --blue: #3b82f6; --border: rgba(51, 65, 85, 0.4); }
+        body { background-color: var(--bg); color: #f1f5f9; font-family: 'Inter', sans-serif; margin: 0; overflow: hidden; }
+        .cyber-grid { background-image: linear-gradient(to right, rgba(16, 185, 129, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(16, 185, 129, 0.03) 1px, transparent 1px); background-size: 40px 40px; }
+        .glass { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(20px); border: 1px solid var(--border); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .nav-btn.active { background: rgba(16, 185, 129, 0.1); color: var(--emerald); border-left: 4px solid var(--emerald); }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+        .pulse-ia { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+    </style>
+</head>
+<body class="cyber-grid flex h-screen">
+
+    <aside class="w-72 bg-slate-950 border-r border-slate-900 flex flex-col p-8 z-50">
+        <div class="flex items-center space-x-4 mb-14">
+            <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <i class="fas fa-brain text-white text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-black uppercase tracking-tighter text-white">SOC-GUARD</h1>
+                <p class="text-[8px] text-blue-500 font-bold tracking-[0.3em] uppercase">Intelligence Node</p>
+            </div>
+        </div>
+        
+        <nav class="flex-1 space-y-2">
+            <button onclick="switchTab('dash')" id="btn-dash" class="nav-btn active w-full flex items-center space-x-4 px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                <i class="fas fa-chart-line"></i><span>Tableau de Bord</span>
+            </button>
+            <button onclick="switchTab('logs')" id="btn-logs" class="nav-btn w-full flex items-center space-x-4 px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-slate-500">
+                <i class="fas fa-list-ul"></i><span>Journal d'Audit</span>
+            </button>
+            <button onclick="switchTab('ia')" id="btn-ia" class="nav-btn w-full flex items-center space-x-4 px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-slate-500">
+                <i class="fas fa-brain"></i><span>Machine Learning</span>
+            </button>
+            <button onclick="switchTab('blacklist')" id="btn-blacklist" class="nav-btn w-full flex items-center space-x-4 px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-slate-500">
+                <i class="fas fa-ban"></i><span>Gestion Blacklist</span>
+            </button>
+        </nav>
+
+        <div class="mt-auto pt-6 border-t border-slate-900">
+            <div class="flex items-center space-x-3 mb-6 p-3 rounded-xl bg-slate-900/50">
+                <div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500"><i class="fas fa-user-shield"></i></div>
+                <div>
+                    <p class="text-[10px] font-black text-white uppercase">{{ user.username }}</p>
+                    <p class="text-[8px] text-slate-500 font-bold uppercase">{{ user.role }}</p>
+                </div>
+            </div>
+            <a href="/logout" class="block w-full text-center py-4 bg-red-600/5 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest border border-red-500/10 hover:bg-red-600 hover:text-white transition-all">Déconnexion</a>
+        </div>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto p-12 custom-scrollbar">
+        <header class="flex justify-between items-start mb-14">
+            <h2 id="view-title" class="text-5xl font-black uppercase italic tracking-tighter text-white">Security <span class="text-blue-500">Operations</span></h2>
+            <div class="flex items-center space-x-4">
+                <select id="iface-select" class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-[10px] text-white outline-none font-mono min-w-[200px]"></select>
+                <button onclick="toggleEngine()" id="toggle-btn" class="bg-blue-600 px-8 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 text-white transition-all">Démarrer</button>
+            </div>
+        </header>
+
+        <!-- DASHBOARD -->
+        <div id="tab-dash" class="tab-content active space-y-10">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="glass p-10 rounded-[2.5rem]">
+                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Paquets Analysés</p>
+                    <h3 class="text-6xl font-black font-mono text-white" id="stat-packets">0</h3>
+                </div>
+                <div class="glass p-10 rounded-[2.5rem] border-l-4 border-red-500">
+                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Alertes IA & Signature</p>
+                    <h3 class="text-6xl font-black font-mono text-red-500" id="stat-threats">0</h3>
+                </div>
+                <div class="glass p-10 rounded-[2.5rem] border-l-4 border-emerald-500">
+                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">IPs Bloquées</p>
+                    <h3 class="text-6xl font-black font-mono text-emerald-500" id="stat-blocked">0</h3>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <div class="glass p-10 rounded-[2.5rem] h-[400px]"><canvas id="trafficChart"></canvas></div>
+                <div class="glass p-10 rounded-[2.5rem] h-[400px]"><canvas id="pieChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- JOURNAL -->
+        <div id="tab-logs" class="tab-content space-y-8">
+            <div class="flex justify-between items-center glass p-8 rounded-3xl">
+                <h3 class="text-xl font-black uppercase italic">Registre d'Audit</h3>
+                <a href="/api/logs/export" class="bg-slate-800 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 text-white"><i class="fas fa-download mr-2"></i>Export CSV</a>
+            </div>
+            <div class="glass rounded-[2rem] overflow-hidden">
+                <table class="w-full text-left text-[11px] font-mono">
+                    <thead class="bg-slate-950 text-slate-500 uppercase font-black">
+                        <tr><th class="p-6">Timestamp</th><th class="p-6">Menace</th><th class="p-6">Source</th><th class="p-6">Destination</th><th class="p-6">Détails</th></tr>
+                    </thead>
+                    <tbody id="alerts-body" class="divide-y divide-slate-800/50"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- IA MACHINE LEARNING -->
+        <div id="tab-ia" class="tab-content space-y-10">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                <div class="lg:col-span-1 space-y-8">
+                    <div class="glass p-8 rounded-3xl text-center">
+                        <div id="ia-status-icon" class="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center text-blue-500 text-3xl mx-auto mb-6 border border-blue-500/20">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h4 class="text-xs font-black uppercase mb-2">État du Modèle</h4>
+                        <p id="ia-status-text" class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Inconnu</p>
+                        <button onclick="trainIA()" id="train-btn" class="mt-8 w-full bg-blue-600 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-600/20 hover:scale-105 transition-all">Lancer l'Apprentissage</button>
+                    </div>
+                    <div class="glass p-8 rounded-3xl">
+                        <h4 class="text-[10px] font-black uppercase text-slate-500 mb-6 tracking-widest">Features Analysées</h4>
+                        <ul class="space-y-4 text-[10px] font-bold uppercase">
+                            <li class="flex justify-between text-slate-300"><span>Protocole</span><span class="text-blue-500">Actif</span></li>
+                            <li class="flex justify-between text-slate-300"><span>Taille Paquet</span><span class="text-blue-500">Actif</span></li>
+                            <li class="flex justify-between text-slate-300"><span>Fréquence/IP</span><span class="text-emerald-500">Nouveau</span></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="lg:col-span-3 glass p-10 rounded-[2.5rem]">
+                    <h3 class="text-xl font-black uppercase italic mb-8"><i class="fas fa-microscope mr-3 text-blue-500"></i>Analyse Comportementale Temps Réel</h3>
+                    <div class="space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar" id="ia-logs-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BLACKLIST -->
+        <div id="tab-blacklist" class="tab-content space-y-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="glass p-8 rounded-3xl h-fit">
+                    <h4 class="text-[10px] font-black uppercase text-slate-400 mb-6 tracking-widest">Ban Manuel</h4>
+                    <input type="text" id="manual-ip" placeholder="0.0.0.0" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-5 py-4 text-xs text-white outline-none mb-4 font-mono focus:border-red-500">
+                    <button onclick="addBlacklist()" class="w-full bg-red-600 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest text-white">Bannir IP</button>
+                </div>
+                <div class="lg:col-span-2 glass rounded-3xl overflow-hidden">
+                    <div id="blacklist-table" class="divide-y divide-slate-800/50"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let trafficChart, pieChart, lastPacketCount = 0;
+
+        async function loadInterfaces() {
+            const res = await fetch('/api/interfaces');
+            const data = await res.json();
+            document.getElementById('iface-select').innerHTML = data.interfaces.map(i => `<option value="${i.name}">${i.name} (${i.ip})</option>`).join('');
+        }
+
+        function switchTab(id) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-'+id).classList.add('active');
+            document.getElementById('btn-'+id).classList.add('active');
+        }
+
+        async function toggleEngine() {
+            const iface = document.getElementById('iface-select').value;
+            await fetch('/api/engine/toggle', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ interface: iface }) });
+            updateStats();
+        }
+
+        async function trainIA() {
+            const btn = document.getElementById('train-btn');
+            btn.innerText = "Apprentissage...";
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+            
+            const res = await fetch('/api/ml/train', { method: 'POST' });
+            const data = await res.json();
+            
+            if(data.status === 'success') {
+                btn.innerText = "Modèle à Jour !";
+                setTimeout(() => {
+                    btn.innerText = "Relancer l'Apprentissage";
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50');
+                }, 3000);
+            }
+            updateStats();
+        }
+
+        async function addBlacklist() {
+            const ip = document.getElementById('manual-ip').value;
+            if(!ip) return;
+            await fetch('/api/blacklist/add', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ ip: ip }) });
+            document.getElementById('manual-ip').value = '';
+            updateStats();
+        }
+
+        async function removeBlacklist(ip) {
+            await fetch('/api/blacklist/remove/'+ip, { method: 'POST' });
+            updateStats();
+        }
+
+        async function updateStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                
+                document.getElementById('stat-packets').innerText = data.packets_count.toLocaleString();
+                document.getElementById('stat-threats').innerText = data.threats_count;
+                document.getElementById('stat-blocked').innerText = data.blocked_count;
+
+                // IA Status UI
+                const iaStatusText = document.getElementById('ia-status-text');
+                const iaIcon = document.getElementById('ia-status-icon');
+                if(data.ml_ready) {
+                    iaStatusText.innerText = "Modèle Actif";
+                    iaStatusText.className = "text-[10px] text-emerald-500 uppercase font-black tracking-widest";
+                    iaIcon.className = "w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-500 text-3xl mx-auto mb-6 border border-emerald-500/20 pulse-ia";
+                } else {
+                    iaStatusText.innerText = "Modèle à Entraîner";
+                    iaStatusText.className = "text-[10px] text-red-500 uppercase font-black tracking-widest";
+                    iaIcon.className = "w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 text-3xl mx-auto mb-6 border border-red-500/20";
+                }
+
+                // Engine Button
+                const btn = document.getElementById('toggle-btn');
+                if(data.engine_active) {
+                    btn.innerText = "ARRÊTER";
+                    btn.className = "bg-red-600 px-8 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-red-600/20";
+                } else {
+                    btn.innerText = "DÉMARRER";
+                    btn.className = "bg-blue-600 px-8 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-600/20";
+                }
+
+                document.getElementById('alerts-body').innerHTML = data.alerts.reverse().map(a => `
+                    <tr class="hover:bg-red-500/5 transition-all">
+                        <td class="p-6 text-slate-400 font-bold">${a.timestamp}</td>
+                        <td class="p-6"><span class="px-3 py-1 bg-red-600/10 text-red-500 rounded-lg text-[10px] font-black">${a.type}</span></td>
+                        <td class="p-6 text-white font-bold">${a.src_ip}</td>
+                        <td class="p-6 text-slate-500 font-bold">${a.dst_ip}</td>
+                        <td class="p-6 text-slate-300 italic">${a.details}</td>
+                    </tr>
+                `).join('');
+
+                document.getElementById('ia-logs-container').innerHTML = data.ia_logs.reverse().map(l => `
+                    <div class="flex items-center justify-between p-4 bg-slate-900/50 rounded-xl border border-slate-800 text-[10px] font-mono">
+                        <div class="flex space-x-6">
+                            <span class="text-slate-500">${l.timestamp}</span>
+                            <span class="text-white font-bold">${l.ip}</span>
+                            <span class="text-blue-500">Len: ${l.len} | Freq: ${l.freq}/2s</span>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-slate-500">Confiance: ${l.conf}</span>
+                            <span class="font-black px-3 py-1 rounded-lg ${l.result === 'ATTACK' ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-500'}">${l.result}</span>
+                        </div>
+                    </div>
+                `).join('');
+
+                document.getElementById('blacklist-table').innerHTML = data.blacklist.map(ip => `
+                    <div class="p-6 flex justify-between items-center hover:bg-white/5 transition-all">
+                        <span class="text-white font-mono font-bold tracking-widest">${ip}</span>
+                        <button onclick="removeBlacklist('${ip}')" class="text-emerald-500 text-[9px] font-black uppercase">Récupérer</button>
+                    </div>
+                `).join('');
+
+                updateCharts(data);
+            } catch(e) {}
+        }
+
+        function initCharts() {
+            const ctxL = document.getElementById('trafficChart').getContext('2d');
+            trafficChart = new Chart(ctxL, {
+                type: 'line',
+                data: { labels: Array(30).fill(''), datasets: [{ label: 'Pkts/s', data: Array(30).fill(0), borderColor: '#3b82f6', tension: 0.4, fill: true, backgroundColor: 'rgba(59, 130, 246, 0.05)' }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { beginAtZero: true, grid: { color: '#1e293b' } } } }
+            });
+            const ctxP = document.getElementById('pieChart').getContext('2d');
+            pieChart = new Chart(ctxP, {
+                type: 'doughnut',
+                data: { labels: ['SYN', 'Scan', 'UDP', 'ARP', 'IA'], datasets: [{ data: [0,0,0,0,0], backgroundColor: ['#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6', '#10b981'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10, weight: 'bold' } } } } }
+            });
+        }
+
+        function updateCharts(data) {
+            const diff = data.packets_count - lastPacketCount; 
+            lastPacketCount = data.packets_count;
+            trafficChart.data.datasets[0].data.push(diff);
+            if(trafficChart.data.datasets[0].data.length > 30) trafficChart.data.datasets[0].data.shift();
+            trafficChart.update('none');
+
+            const s = data.attack_distribution;
+            pieChart.data.datasets[0].data = [s["SYN Flood"]||0, s["Port Scan"]||0, s["UDP Flood"]||0, s["ARP Spoofing"]||0, s["Anomalie IA"]||0];
+            pieChart.update();
+        }
+
+        loadInterfaces();
+        initCharts();
+        setInterval(updateStats, 1500);
+    </script>
+</body>
+</html>

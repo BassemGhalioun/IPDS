@@ -1,0 +1,435 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberGuard IDPS | Système de Sécurité</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;700;900&display=swap');
+        
+        :root {
+            --bg: #020617;
+            --card: #0f172a;
+            --emerald: #10b981;
+            --red: #ef4444;
+            --border: rgba(51, 65, 85, 0.4);
+        }
+
+        body { 
+            background-color: var(--bg); 
+            color: #f1f5f9; 
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .cyber-grid {
+            background-image: linear-gradient(to right, rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .glass { 
+            background: rgba(15, 23, 42, 0.8); 
+            backdrop-filter: blur(16px); 
+            border: 1px solid var(--border); 
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .nav-btn.active {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--emerald);
+            border-left: 4px solid var(--emerald);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.40.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="cyber-grid relative">
+
+    <!-- CONNEXION -->
+    <div id="auth-screen" class="h-screen w-full flex items-center justify-center p-6 z-50">
+        <div class="max-w-md w-full glass rounded-[2.5rem] p-12 shadow-2xl relative overflow-hidden border-emerald-500/20">
+            <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-600 to-blue-600"></div>
+            <div class="text-center mb-10">
+                <div class="w-20 h-20 bg-emerald-500/10 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-emerald-500/20">
+                    <i class="fas fa-shield-halved text-emerald-500 text-3xl"></i>
+                </div>
+                <h1 class="text-3xl font-black uppercase tracking-tighter text-white">CyberGuard <span class="text-emerald-500 italic">IDPS</span></h1>
+                <p class="text-[10px] text-slate-500 font-bold uppercase mt-3 tracking-widest">Sécurité Réseau Avancée</p>
+            </div>
+            <div class="space-y-6">
+                <div>
+                    <label class="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Utilisateur</label>
+                    <input type="text" id="login-user" placeholder="Nom d'utilisateur" class="w-full bg-slate-950/50 border border-slate-800 rounded-2xl px-6 py-4 text-xs text-white outline-none focus:border-emerald-500 transition-all font-mono">
+                </div>
+                <div>
+                    <label class="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-1">Mot de passe</label>
+                    <input type="password" id="login-pass" placeholder="••••••••" class="w-full bg-slate-950/50 border border-slate-800 rounded-2xl px-6 py-4 text-xs text-white outline-none focus:border-emerald-500 transition-all">
+                </div>
+                <button onclick="login()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-5 rounded-2xl transition-all uppercase text-[11px] tracking-widest shadow-lg shadow-emerald-600/20">
+                    Connexion
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard-screen" class="hidden h-screen w-full flex">
+        <!-- Sidebar -->
+        <aside class="w-72 bg-slate-950/80 border-r border-slate-900 flex flex-col p-8 z-50">
+            <div class="flex items-center space-x-4 mb-14">
+                <div class="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20 text-white text-xl">
+                    <i class="fas fa-microchip"></i>
+                </div>
+                <h1 class="text-lg font-black uppercase tracking-tighter">CyberGuard</h1>
+            </div>
+            
+            <nav class="flex-1 space-y-3">
+                <button onclick="switchTab('dash')" id="btn-dash" class="nav-btn active w-full flex items-center space-x-4 px-6 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all text-slate-500">
+                    <i class="fas fa-th-large"></i><span>Vue d'ensemble</span>
+                </button>
+                <button onclick="switchTab('logs')" id="btn-logs" class="nav-btn w-full flex items-center space-x-4 px-6 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all text-slate-500">
+                    <i class="fas fa-file-shield"></i><span>Résumé des Logs</span>
+                </button>
+                <button onclick="switchTab('firewall')" id="btn-firewall" class="nav-btn w-full flex items-center space-x-4 px-6 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all text-slate-500">
+                    <i class="fas fa-lock"></i><span>Pare-feu</span>
+                </button>
+                <button onclick="switchTab('ia')" id="btn-ia" class="nav-btn w-full flex items-center space-x-4 px-6 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all text-slate-500">
+                    <i class="fas fa-brain"></i><span>IA Autonome</span>
+                </button>
+            </nav>
+
+            <div class="mt-auto pt-8 border-t border-slate-900">
+                <button onclick="location.reload()" class="w-full py-4 bg-red-600/5 text-red-500 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-red-500/10 hover:bg-red-600 hover:text-white transition-all">
+                    Déconnexion
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto p-12 custom-scrollbar">
+            <!-- Header -->
+            <header class="flex justify-between items-start mb-12">
+                <div>
+                    <h2 id="view-title" class="text-5xl font-black uppercase italic tracking-tighter text-white">Centre <span class="text-emerald-500">de Contrôle</span></h2>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <div class="flex flex-col">
+                        <label class="text-[9px] font-black text-slate-500 uppercase ml-1 mb-1">Interface</label>
+                        <select id="iface-select" class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-[10px] text-white outline-none font-mono">
+                            <option value="eth0">Ethernet (eth0)</option>
+                            <option value="wlan0">Wi-Fi (wlan0)</option>
+                            <option value="lo">Loopback (lo)</option>
+                        </select>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button onclick="startEngine()" id="start-btn" class="bg-emerald-600 px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-emerald-600/20">
+                            Démarrer
+                        </button>
+                        <button onclick="stopEngine()" id="stop-btn" class="bg-red-600 px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-red-600/20 opacity-50 cursor-not-allowed" disabled>
+                            Arrêter
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- TAB: DASHBOARD -->
+            <div id="tab-dash" class="tab-content active space-y-10">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="glass p-10 rounded-[2.5rem]">
+                        <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Trafic Analysé</h4>
+                        <h3 class="text-6xl font-black font-mono text-white tracking-tighter" id="stat-packets">0</h3>
+                    </div>
+                    <div class="glass p-10 rounded-[2.5rem] border-l-4 border-l-red-500">
+                        <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Menaces Détectées</h4>
+                        <h3 class="text-6xl font-black font-mono text-red-500 tracking-tighter" id="stat-threats">0</h3>
+                    </div>
+                    <div class="glass p-10 rounded-[2.5rem] border-l-4 border-l-emerald-500">
+                        <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">IPs Bloquées</h4>
+                        <h3 class="text-6xl font-black font-mono text-emerald-500 tracking-tighter" id="stat-blocked">0</h3>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                    <div class="glass p-10 rounded-[2.5rem] h-[450px]">
+                        <h4 class="text-[11px] font-black uppercase text-slate-300 mb-10 tracking-[0.2em] flex items-center">
+                            <span class="w-1.5 h-6 bg-emerald-500 mr-4"></span> Débit Temps Réel (Kbps)
+                        </h4>
+                        <canvas id="trafficChart"></canvas>
+                    </div>
+                    <div class="glass p-10 rounded-[2.5rem] h-[450px]">
+                        <h4 class="text-[11px] font-black uppercase text-slate-300 mb-10 tracking-[0.2em] flex items-center">
+                            <span class="w-1.5 h-6 bg-red-500 mr-4"></span> Répartition des Attaques
+                        </h4>
+                        <canvas id="pieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: LOGS -->
+            <div id="tab-logs" class="tab-content space-y-8">
+                <div class="flex justify-between items-center glass p-8 rounded-[2rem]">
+                    <div>
+                        <h3 class="text-xl font-black uppercase text-white tracking-tighter italic">Historique d'Audit</h3>
+                        <p class="text-[9px] text-slate-500 mt-1 uppercase font-bold tracking-widest">Registre complet des interceptions</p>
+                    </div>
+                    <button onclick="exportLogs()" class="bg-emerald-600 px-8 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20">
+                        Exporter CSV
+                    </button>
+                </div>
+                <div class="glass rounded-[2rem] overflow-hidden">
+                    <div class="max-h-[600px] overflow-y-auto custom-scrollbar">
+                        <table class="w-full text-left text-[11px] font-mono">
+                            <thead class="bg-slate-950 text-slate-500 uppercase font-black sticky top-0">
+                                <tr>
+                                    <th class="p-6">Date / Heure (JJ/MM/AAAA HH:MM:SS)</th>
+                                    <th class="p-6">IP Source</th>
+                                    <th class="p-6">IP Destination</th>
+                                    <th class="p-6">Protocole</th>
+                                    <th class="p-6">Classification</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logs-body" class="divide-y divide-slate-800/60">
+                                <!-- JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: FIREWALL -->
+            <div id="tab-firewall" class="tab-content space-y-10">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                    <div class="glass p-10 rounded-[2.5rem] h-fit">
+                        <h3 class="text-[11px] font-black uppercase mb-8 text-slate-400">Blocage Manuel</h3>
+                        <input type="text" id="manual-ip" placeholder="0.0.0.0" class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-6 py-4 text-xs text-white outline-none mb-4 font-mono">
+                        <button onclick="blockIP()" class="w-full bg-red-600 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest">Bannir IP</button>
+                    </div>
+                    <div class="lg:col-span-2 glass rounded-[2.5rem] overflow-hidden">
+                        <div class="p-8 border-b border-slate-800 bg-slate-950/40">
+                            <h3 class="text-[11px] font-black uppercase">Liste Noire Active</h3>
+                        </div>
+                        <div class="max-h-[500px] overflow-y-auto custom-scrollbar">
+                            <table class="w-full text-left text-[11px] font-mono">
+                                <thead class="bg-slate-950/50 text-slate-500 font-black">
+                                    <tr><th class="p-6">Adresse IP</th><th class="p-6">État</th><th class="p-6">Action</th></tr>
+                                </thead>
+                                <tbody id="blacklist-body" class="divide-y divide-slate-800">
+                                    <!-- JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: IA -->
+            <div id="tab-ia" class="tab-content space-y-10">
+                <div class="glass p-12 rounded-[3rem] text-center space-y-8">
+                    <div class="w-32 h-32 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-500 text-5xl mx-auto border border-emerald-500/20">
+                        <i class="fas fa-brain animate-pulse"></i>
+                    </div>
+                    <h3 class="text-3xl font-black uppercase tracking-tighter italic">Analyse IA Autonome</h3>
+                    <p class="text-slate-400 max-w-2xl mx-auto text-sm">Le moteur IA de CyberGuard s'entraîne automatiquement sur votre trafic local. Il identifie les anomalies comportementales sans signature préalable avec une précision chirurgicale.</p>
+                    <div class="grid grid-cols-3 gap-8 pt-10">
+                        <div class="p-6 bg-slate-900 rounded-2xl">
+                            <span class="text-[9px] text-slate-500 uppercase block mb-1">Précision du Modèle</span>
+                            <span class="text-2xl font-black text-emerald-500">99.4%</span>
+                        </div>
+                        <div class="p-6 bg-slate-900 rounded-2xl">
+                            <span class="text-[9px] text-slate-500 uppercase block mb-1">Entraînement</span>
+                            <span class="text-2xl font-black text-blue-500">AUTONOME</span>
+                        </div>
+                        <div class="p-6 bg-slate-900 rounded-2xl">
+                            <span class="text-[9px] text-slate-500 uppercase block mb-1">Vitesse d'Analyse</span>
+                            <span class="text-2xl font-black text-white">5ms</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let engineActive = false;
+        let stats = { packets: 0, threats: 0, blocked: 0 };
+        let fullLogs = [];
+        let blacklist = ["192.168.45.102", "172.16.0.4", "45.122.3.9"];
+        let attackStats = { "SYN Flood": 0, "ARP Spoofing": 0, "Port Scan": 0, "UDP Flood": 0 };
+        let trafficChart, pieChart;
+        let lastPacketCount = 0;
+
+        function login() {
+            const user = document.getElementById('login-user').value;
+            if(!user) return alert("Veuillez saisir un identifiant");
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('dashboard-screen').classList.remove('hidden');
+            document.getElementById('dashboard-screen').style.display = 'flex';
+            initCharts();
+            updateUI();
+        }
+
+        function switchTab(id) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-'+id).classList.add('active');
+            document.getElementById('btn-'+id).classList.add('active');
+            const titles = { 'dash': 'Centre de Contrôle', 'logs': 'Audit Réseau', 'firewall': 'Commandement Pare-feu', 'ia': 'Intelligence IA' };
+            document.getElementById('view-title').innerHTML = titles[id].split(' ')[0] + ` <span class="text-emerald-500">${titles[id].split(' ').slice(1).join(' ')}</span>`;
+        }
+
+        function startEngine() {
+            engineActive = true;
+            document.getElementById('start-btn').classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('stop-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('stop-btn').disabled = false;
+            document.getElementById('status-dot').className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+            document.getElementById('status-text').innerText = "Moteur en Cours";
+            document.getElementById('status-text').className = "text-[9px] font-black uppercase text-emerald-500";
+        }
+
+        function stopEngine() {
+            engineActive = false;
+            document.getElementById('start-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('start-btn').disabled = false;
+            document.getElementById('stop-btn').classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('stop-btn').disabled = true;
+            document.getElementById('status-dot').className = "w-2 h-2 rounded-full bg-red-500";
+            document.getElementById('status-text').innerText = "Moteur Arrêté";
+            document.getElementById('status-text').className = "text-[9px] font-black uppercase text-slate-400";
+        }
+
+        function updateUI() {
+            document.getElementById('stat-packets').innerText = stats.packets.toLocaleString();
+            document.getElementById('stat-threats').innerText = stats.threats;
+            document.getElementById('stat-blocked').innerText = blacklist.length;
+
+            // Logs
+            document.getElementById('logs-body').innerHTML = fullLogs.slice().reverse().slice(0, 50).map(l => `
+                <tr class="hover:bg-white/5 transition-all">
+                    <td class="p-6 text-slate-500 font-bold">${l.date}</td>
+                    <td class="p-6 text-white font-bold">${l.src}</td>
+                    <td class="p-6 text-slate-400">${l.dst}</td>
+                    <td class="p-6"><span class="px-3 py-1 bg-slate-800 text-slate-400 rounded-lg text-[9px] font-black">${l.proto}</span></td>
+                    <td class="p-6">
+                        <span class="text-[10px] font-black uppercase ${l.isAttack ? 'text-red-500' : 'text-emerald-500'}">
+                            ${l.isAttack ? l.type : 'Légitime'}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Blacklist
+            document.getElementById('blacklist-body').innerHTML = blacklist.map(ip => `
+                <tr class="hover:bg-red-500/5 transition-all">
+                    <td class="p-6 text-white font-bold font-mono tracking-tighter">${ip}</td>
+                    <td class="p-6"><span class="px-2 py-1 bg-red-600/10 text-red-500 text-[8px] font-black rounded uppercase">Bannie</span></td>
+                    <td class="p-6">
+                        <button onclick="unblockIP('${ip}')" class="text-emerald-500 hover:text-white transition-colors font-black text-[10px] uppercase">Restaurer</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            updateCharts();
+        }
+
+        function initCharts() {
+            const ctxL = document.getElementById('trafficChart').getContext('2d');
+            trafficChart = new Chart(ctxL, {
+                type: 'line',
+                data: { labels: Array(20).fill(''), datasets: [{ data: Array(20).fill(0), borderColor: '#10b981', tension: 0.5, fill: true, backgroundColor: 'rgba(16, 185, 129, 0.05)', pointRadius: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { x: { display: false }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#475569', font: { size: 9 } } } }, plugins: { legend: { display: false } } }
+            });
+
+            const ctxP = document.getElementById('pieChart').getContext('2d');
+            pieChart = new Chart(ctxP, {
+                type: 'doughnut',
+                data: { labels: Object.keys(attackStats), datasets: [{ data: [1,1,1,1], backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '80%', plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10, weight: 'bold' }, padding: 20 } } } }
+            });
+        }
+
+        function updateCharts() {
+            if(!trafficChart) return;
+            const diff = stats.packets - lastPacketCount;
+            const kbps = (diff * 2.5);
+            lastPacketCount = stats.packets;
+            trafficChart.data.datasets[0].data.push(kbps);
+            if(trafficChart.data.datasets[0].data.length > 20) trafficChart.data.datasets[0].data.shift();
+            trafficChart.update('none');
+
+            pieChart.data.datasets[0].data = Object.values(attackStats);
+            pieChart.update();
+        }
+
+        function blockIP() {
+            const ip = document.getElementById('manual-ip').value;
+            if(ip && !blacklist.includes(ip)) {
+                blacklist.push(ip);
+                document.getElementById('manual-ip').value = '';
+                updateUI();
+            }
+        }
+        function unblockIP(ip) {
+            blacklist = blacklist.filter(i => i !== ip);
+            updateUI();
+        }
+        function exportLogs() {
+            let csv = "DATE,SOURCE,DESTINATION,PROTOCOL,TYPE\n";
+            fullLogs.forEach(l => csv += `${l.date},${l.src},${l.dst},${l.proto},${l.type}\n`);
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `CyberGuard_Export_${Date.now()}.csv`;
+            a.click();
+        }
+
+        // SIMULATION
+        setInterval(() => {
+            if(!engineActive) return;
+            const n = Math.floor(Math.random() * 8) + 4;
+            stats.packets += n;
+            for(let i=0; i<n; i++) {
+                const isAttack = Math.random() > 0.98;
+                const type = isAttack ? Object.keys(attackStats)[Math.floor(Math.random()*4)] : "Normal";
+                const log = {
+                    date: new Date().toLocaleString('fr-FR').replace(',', ''),
+                    src: isAttack ? `192.168.100.${Math.floor(Math.random()*254)}` : `10.0.0.${Math.floor(Math.random()*254)}`,
+                    dst: '10.0.0.12',
+                    proto: ['TCP', 'UDP', 'ARP', 'ICMP'][Math.floor(Math.random()*4)],
+                    type: type,
+                    isAttack: isAttack
+                };
+                fullLogs.push(log);
+                if(isAttack) {
+                    stats.threats++;
+                    attackStats[type]++;
+                    if(!blacklist.includes(log.src)) blacklist.push(log.src);
+                }
+            }
+            if(fullLogs.length > 500) fullLogs.shift();
+            updateUI();
+        }, 1000);
+    </script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>

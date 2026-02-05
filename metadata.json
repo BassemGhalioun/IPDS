@@ -1,0 +1,8 @@
+
+{
+  "name": "CyberGuard IDPS - Suite de Sécurité Avancée",
+  "description": "Système de Détection et Prévention d'Intrusion hybride. Dashboard temps réel en français avec contrôle d'interface.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

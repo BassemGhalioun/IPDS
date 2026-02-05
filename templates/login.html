@@ -1,0 +1,32 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>IDPS Sentinel | Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #020617; }
+        .cyber-grid {
+            background-image: linear-gradient(to right, rgba(16, 185, 129, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(16, 185, 129, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+    </style>
+</head>
+<body class="cyber-grid flex items-center justify-center min-h-screen">
+    <div class="max-w-md w-full bg-slate-900/50 border border-slate-800 rounded-3xl p-12 shadow-2xl backdrop-blur-xl">
+        <div class="text-center mb-10">
+            <h1 class="text-3xl font-black uppercase tracking-tighter text-white">Cyber Guard <span class="text-emerald-500 italic">IDPS</span></h1>
+            <p class="text-slate-500 text-[10px] mt-2 uppercase tracking-widest font-black italic">Accès Restreint - Terminal 01</p>
+        </div>
+        <form action="/login" method="POST" class="space-y-6">
+            <input type="text" name="username" placeholder="Login ID" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-5 py-4 text-xs text-white outline-none focus:border-emerald-500 transition-all">
+            <input type="password" name="password" placeholder="Passcode" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-5 py-4 text-xs text-white outline-none focus:border-emerald-500 transition-all">
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-xl transition-all uppercase text-[11px] tracking-widest shadow-lg shadow-emerald-600/20">
+                Initialiser la session
+            </button>
+        </form>
+    </div>
+</body>
+</html>
